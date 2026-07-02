@@ -1,0 +1,23 @@
+{
+  "name": "job-mail-server",
+  "version": "1.0.0",
+  "description": "Job Mail Automation Backend",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "cloudinary": "^2.10.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.15",
+    "openai": "^6.45.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
