@@ -1,6 +1,7 @@
 const path = require('path');
+const fs = require('fs');
 const { readJSON, writeJSON } = require('../utils/fileHelpers');
-const { analyzeJobPost } = require('../services/geminiService');
+const { analyzeJobPost, extractJDFromImage } = require('../services/geminiService');
 const { sendMail } = require('../services/emailService');
 const { uploadFile, deleteFile, isConfigured } = require('../services/cloudinaryService');
 
@@ -11,11 +12,39 @@ const analyzeJob = async (req, res) => {
     if (!jobText || jobText.trim().length < 10) {
       return res.status(400).json({ error: 'Please provide a valid job description (min 10 characters).' });
     }
-    //console.log('Analyzing job post:', jobText);
     const result = await analyzeJobPost(jobText);
 
     res.json(result);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const analyzeJobFromImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Please upload an image file.' });
+    }
+
+    // Extract text from image
+    const extractedText = await extractJDFromImage(req.file.path);
+
+    // Clean up temp image file
+    try { fs.unlinkSync(req.file.path); } catch (e) { /* ignore */ }
+
+    if (!extractedText || extractedText.trim().length < 10) {
+      return res.status(400).json({ error: 'Could not extract job description from the image. Please try a clearer image or paste the text manually.' });
+    }
+
+    // Analyze the extracted text
+    const result = await analyzeJobPost(extractedText);
+
+    res.json({ ...result, extractedText });
+  } catch (error) {
+    // Clean up temp file on error
+    if (req.file?.path) {
+      try { fs.unlinkSync(req.file.path); } catch (e) { /* ignore */ }
+    }
     res.status(500).json({ error: error.message });
   }
 };
@@ -280,4 +309,4 @@ const deleteResumeCloudinary = async (req, res) => {
   }
 };
 
-module.exports = { analyzeJob, sendJobMail, getHistory, clearHistory, getSettings, saveSettings, uploadResume, getResume, selectResume, deleteResume, uploadResumeCloudinary, deleteResumeCloudinary };
+module.exports = { analyzeJob, analyzeJobFromImage, sendJobMail, getHistory, clearHistory, getSettings, saveSettings, uploadResume, getResume, selectResume, deleteResume, uploadResumeCloudinary, deleteResumeCloudinary };

@@ -7,6 +7,11 @@ const API = axios.create({
 
 export const analyzeJob = (jobText) => API.post('/analyze', { jobText });
 
+export const analyzeJobFromImage = (formData) =>
+  API.post('/analyze-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
 export const sendMail = (data) => API.post('/send-mail', data);
 
 export const getHistory = () => API.get('/history');

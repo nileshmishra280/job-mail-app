@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 const {
-  analyzeJob, sendJobMail, getHistory, clearHistory,
+  analyzeJob, analyzeJobFromImage, sendJobMail, getHistory, clearHistory,
   getSettings, saveSettings, uploadResume, getResume, selectResume, deleteResume,
   uploadResumeCloudinary, deleteResumeCloudinary
 } = require('../controllers/mainController');
@@ -14,7 +14,7 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
-// Multer config for resume upload
+// Multer config for resume upload (PDF only)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, UPLOADS_DIR);
@@ -35,11 +35,36 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 }
+});
+
+// Multer config for JD image upload
+const imageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `jd_image_${Date.now()}${path.extname(file.originalname)}`);
+  }
+});
+
+const imageFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed'), false);
+  }
+};
+
+const imageUpload = multer({
+  storage: imageStorage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit for images
 });
 
 // Routes
 router.post('/analyze', analyzeJob);
+router.post('/analyze-image', imageUpload.single('jdImage'), analyzeJobFromImage);
 router.post('/send-mail', sendJobMail);
 router.get('/history', getHistory);
 router.delete('/history', clearHistory);
