@@ -91,7 +91,7 @@ Candidate: ${PROFILE.name}, ${PROFILE.education}, ${PROFILE.experience}
 Skills: ${PROFILE.skills.join(', ')}
 
 Return exactly this structure:
-{"company":"company name","role":"job title","email":"hr email or empty string","subject":"professional subject line","mail":"professional 4-5 line email body expressing interest, highlighting relevant skills, signed as ${PROFILE.name}"}`,
+{"company":"company name","role":"job title","email":"hr email or empty string","subject":"professional subject line","mail":"professional 4-5 line email body expressing interest, highlighting relevant skills, signed as ${PROFILE.name}\\nPhone: +91 8460805733"}`,
       },
     ],
     max_tokens: 400,
