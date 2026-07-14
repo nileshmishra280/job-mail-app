@@ -19,7 +19,15 @@ app.use('/api', require('./routes/mainRoutes'));
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    env: {
+      SENDER_EMAIL: process.env.SENDER_EMAIL ? `${process.env.SENDER_EMAIL.slice(0,4)}…` : 'NOT SET',
+      APP_PASSWORD: process.env.APP_PASSWORD ? '✓ set' : 'NOT SET',
+      GROQ_API_KEY: process.env.GROQ_API_KEY ? '✓ set' : 'NOT SET',
+    }
+  });
 });
 
 // Error handling middleware

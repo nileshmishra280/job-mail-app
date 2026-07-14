@@ -59,8 +59,8 @@ const sendMail = async ({ to, subject, text, attachResume }) => {
     const info = await transporter.sendMail(mailOptions);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Email Error:', error);
-    throw new Error('Failed to send email. Check your credentials and try again.');
+    console.error('Email Error:', error.message || error);
+    throw new Error(`Failed to send email: ${error.message || 'Unknown error'}`);
   }
 };
 
