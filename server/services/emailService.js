@@ -11,12 +11,9 @@ const sendMail = async ({ to, subject, text, attachResume }) => {
   const templates = readJSON('templates.json');
   const resend = new Resend(apiKey);
 
-  // From address — Resend requires a verified domain.
-  // On the free plan you can send from onboarding@resend.dev to any address.
-  // Once you verify your own domain, swap this to your real address.
-  const from = process.env.SENDER_EMAIL
-    ? `Nilesh Mishra <${process.env.SENDER_EMAIL}>`
-    : 'Nilesh Mishra <onboarding@resend.dev>';
+  // Resend free tier: must send from onboarding@resend.dev unless you have a verified domain.
+  // The recipient sees "Nilesh Mishra" as the sender name which is what matters.
+  const from = 'Nilesh Mishra <onboarding@resend.dev>';
 
   const payload = {
     from,
