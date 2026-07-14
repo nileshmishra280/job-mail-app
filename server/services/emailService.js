@@ -1,51 +1,52 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+const fs = require('fs');
 const { readJSON } = require('../utils/fileHelpers');
 
 const sendMail = async ({ to, subject, text, attachResume }) => {
-  const settings = readJSON('settings.json');
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is not configured. Add it to your environment variables.');
+  }
+
   const templates = readJSON('templates.json');
+  const resend = new Resend(apiKey);
 
-  const senderEmail = settings.senderEmail || process.env.SENDER_EMAIL;
-  const appPassword = settings.appPassword || process.env.APP_PASSWORD;
+  // From address — Resend requires a verified domain.
+  // On the free plan you can send from onboarding@resend.dev to any address.
+  // Once you verify your own domain, swap this to your real address.
+  const from = process.env.SENDER_EMAIL
+    ? `Nilesh Mishra <${process.env.SENDER_EMAIL}>`
+    : 'Nilesh Mishra <onboarding@resend.dev>';
 
-  if (!senderEmail || !appPassword) {
-    throw new Error('Sender email or app password not configured. Please set them in Settings.');
-  }
-
-  if (!to || !subject || !text) {
-    throw new Error('Missing required fields: to, subject, text');
-  }
-
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: senderEmail,
-      pass: appPassword,
-    },
-  });
-
-  const mailOptions = {
-    from: senderEmail,
-    to,
+  const payload = {
+    from,
+    to: [to],
     subject,
     text,
   };
 
+  // Attach resume if requested
   if (attachResume) {
     const selectedSource = templates.selectedResumeSource || 'local';
+
     if (selectedSource === 'local' && templates.resumePath) {
-      mailOptions.attachments = [
-        {
-          filename: 'Resume.pdf',
-          path: templates.resumePath,
-        },
-      ];
+      try {
+        const fileContent = fs.readFileSync(templates.resumePath);
+        payload.attachments = [
+          {
+            filename: 'Resume.pdf',
+            content: fileContent,
+          },
+        ];
+      } catch (e) {
+        console.warn('Could not read local resume for attachment:', e.message);
+      }
     } else if (selectedSource === 'cloudinary' && templates.selectedCloudinaryResumeId) {
       const selected = (templates.cloudinaryResumes || []).find(
         (item) => item.id === templates.selectedCloudinaryResumeId
       );
-      if (selected && selected.url) {
-        mailOptions.attachments = [
+      if (selected?.url) {
+        payload.attachments = [
           {
             filename: `${selected.name}.pdf`,
             path: selected.url,
@@ -55,13 +56,14 @@ const sendMail = async ({ to, subject, text, attachResume }) => {
     }
   }
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    console.error('Email Error:', error.message || error);
-    throw new Error(`Failed to send email: ${error.message || 'Unknown error'}`);
+  const { data, error } = await resend.emails.send(payload);
+
+  if (error) {
+    console.error('Resend error:', error);
+    throw new Error(`Failed to send email: ${error.message || JSON.stringify(error)}`);
   }
+
+  return { success: true, messageId: data.id };
 };
 
 module.exports = { sendMail };
