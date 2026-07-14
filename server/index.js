@@ -26,6 +26,7 @@ app.get('/health', (req, res) => {
       SENDER_EMAIL: process.env.SENDER_EMAIL ? `${process.env.SENDER_EMAIL.slice(0,4)}…` : 'NOT SET',
       APP_PASSWORD: process.env.APP_PASSWORD ? '✓ set' : 'NOT SET',
       GROQ_API_KEY: process.env.GROQ_API_KEY ? '✓ set' : 'NOT SET',
+      RESEND_API_KEY: process.env.RESEND_API_KEY ? '✓ set' : 'NOT SET',
     }
   });
 });
