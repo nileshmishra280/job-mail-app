@@ -23,10 +23,8 @@ app.get('/health', (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     env: {
-      SENDER_EMAIL: process.env.SENDER_EMAIL ? `${process.env.SENDER_EMAIL.slice(0,4)}…` : 'NOT SET',
-      APP_PASSWORD: process.env.APP_PASSWORD ? '✓ set' : 'NOT SET',
       GROQ_API_KEY: process.env.GROQ_API_KEY ? '✓ set' : 'NOT SET',
-      RESEND_API_KEY: process.env.RESEND_API_KEY ? '✓ set' : 'NOT SET',
+      BREVO_API_KEY: process.env.BREVO_API_KEY ? '✓ set' : 'NOT SET',
     }
   });
 });

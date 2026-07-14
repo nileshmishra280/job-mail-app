@@ -1,66 +1,68 @@
-const { Resend } = require('resend');
 const fs = require('fs');
 const { readJSON } = require('../utils/fileHelpers');
 
 const sendMail = async ({ to, subject, text, attachResume }) => {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) {
-    throw new Error('RESEND_API_KEY is not configured. Add it to your environment variables.');
+    throw new Error('BREVO_API_KEY is not configured. Add it to your environment variables.');
   }
 
   const templates = readJSON('templates.json');
-  const resend = new Resend(apiKey);
 
-  // Resend free tier: must send from onboarding@resend.dev unless you have a verified domain.
-  // The recipient sees "Nilesh Mishra" as the sender name which is what matters.
-  const from = 'Nilesh Mishra <onboarding@resend.dev>';
-
+  // Build payload for Brevo transactional email API
   const payload = {
-    from,
-    to: [to],
+    sender: { name: 'Nilesh Mishra', email: 'nileshmishra2508@gmail.com' },
+    to: [{ email: to }],
     subject,
-    text,
+    textContent: text,
   };
 
   // Attach resume if requested
   if (attachResume) {
     const selectedSource = templates.selectedResumeSource || 'local';
+    const attachments = [];
 
     if (selectedSource === 'local' && templates.resumePath) {
       try {
         const fileContent = fs.readFileSync(templates.resumePath);
-        payload.attachments = [
-          {
-            filename: 'Resume.pdf',
-            content: fileContent,
-          },
-        ];
+        attachments.push({
+          name: 'Resume.pdf',
+          content: fileContent.toString('base64'),
+        });
       } catch (e) {
-        console.warn('Could not read local resume for attachment:', e.message);
+        console.warn('Could not read local resume:', e.message);
       }
     } else if (selectedSource === 'cloudinary' && templates.selectedCloudinaryResumeId) {
       const selected = (templates.cloudinaryResumes || []).find(
         (item) => item.id === templates.selectedCloudinaryResumeId
       );
       if (selected?.url) {
-        payload.attachments = [
-          {
-            filename: `${selected.name}.pdf`,
-            path: selected.url,
-          },
-        ];
+        attachments.push({ url: selected.url, name: `${selected.name}.pdf` });
       }
     }
+
+    if (attachments.length > 0) payload.attachment = attachments;
   }
 
-  const { data, error } = await resend.emails.send(payload);
+  // Call Brevo REST API directly (no domain verification needed)
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': apiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
 
-  if (error) {
-    console.error('Resend error:', error);
-    throw new Error(`Failed to send email: ${error.message || JSON.stringify(error)}`);
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error('Brevo error:', data);
+    throw new Error(`Failed to send email: ${data.message || JSON.stringify(data)}`);
   }
 
-  return { success: true, messageId: data.id };
+  return { success: true, messageId: data.messageId };
 };
 
 module.exports = { sendMail };
